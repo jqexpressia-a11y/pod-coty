@@ -1,0 +1,467 @@
+{
+  "name": "Hermes PM Traffic Control Starter",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hermes-pm-task-intake",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook_intake",
+      "name": "Hermes PM Task Intake",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "task_id",
+              "name": "task_id",
+              "value": "={{ $json.task_id }}",
+              "type": "string"
+            },
+            {
+              "id": "owner",
+              "name": "owner",
+              "value": "={{ $json.owner || 'jq' }}",
+              "type": "string"
+            },
+            {
+              "id": "lane",
+              "name": "lane",
+              "value": "={{ $json.lane }}",
+              "type": "string"
+            },
+            {
+              "id": "status",
+              "name": "status",
+              "value": "Routed",
+              "type": "string"
+            },
+            {
+              "id": "requested_outcome",
+              "name": "requested_outcome",
+              "value": "={{ $json.requested_outcome }}",
+              "type": "string"
+            },
+            {
+              "id": "approval_required",
+              "name": "approval_required",
+              "value": "={{ $json.approval_required === true }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "normalize_payload",
+      "name": "Normalize Task Payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.lane }}",
+                    "rightValue": "agent_build",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "agent_build"
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.lane }}",
+                    "rightValue": "research",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "research"
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.lane }}",
+                    "rightValue": "code",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "code"
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.lane }}",
+                    "rightValue": "outreach",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "outreach"
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.lane }}",
+                    "rightValue": "operations",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "operations"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "lane_switch",
+      "name": "Switch by Task Lane",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "route",
+              "name": "route",
+              "value": "CrewAI Builder Lane",
+              "type": "string"
+            },
+            {
+              "id": "next_action",
+              "name": "next_action",
+              "value": "Package build spec for CrewAI and hold activation until jq approval.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "agent_build_lane",
+      "name": "Agent Build Lane Placeholder",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        760,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "route",
+              "name": "route",
+              "value": "Firecrawl → Researcher → Gemini → Claude",
+              "type": "string"
+            },
+            {
+              "id": "next_action",
+              "name": "next_action",
+              "value": "Collect sources, validate claims, and send cleaned summary for jq approval.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "research_lane",
+      "name": "Research Lane Placeholder",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        760,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "route",
+              "name": "route",
+              "value": "Cursor COO Self-Correction Lane",
+              "type": "string"
+            },
+            {
+              "id": "next_action",
+              "name": "next_action",
+              "value": "Send workflow, code, or error context to Cursor for repair and test.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "code_lane",
+      "name": "Code Lane Placeholder",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        760,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "route",
+              "name": "route",
+              "value": "Claude Draft → Zapier Pending Approval",
+              "type": "string"
+            },
+            {
+              "id": "next_action",
+              "name": "next_action",
+              "value": "Draft message and wait for jq approval before sending through Zapier.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "outreach_lane",
+      "name": "Outreach Lane Placeholder",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        760,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "route",
+              "name": "route",
+              "value": "Hermes PM Operations Lane",
+              "type": "string"
+            },
+            {
+              "id": "next_action",
+              "name": "next_action",
+              "value": "Update backlog, status table, or project plan. Apply approval gate for external or permanent actions.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "operations_lane",
+      "name": "Operations Lane Placeholder",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        760,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { task_id: $json.task_id, owner: $json.owner, lane: $json.lane, status: $json.status || 'Routed', route: $json.route || 'Manual review required', next_action: $json.next_action || 'Review lane and assign owner', approval_required: $json.approval_required } }}",
+        "options": {}
+      },
+      "id": "respond_status",
+      "name": "Return Status to Hermes PM",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Hermes PM Task Intake": {
+      "main": [
+        [
+          {
+            "node": "Normalize Task Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Task Payload": {
+      "main": [
+        [
+          {
+            "node": "Switch by Task Lane",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch by Task Lane": {
+      "main": [
+        [
+          {
+            "node": "Agent Build Lane Placeholder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Research Lane Placeholder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code Lane Placeholder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Outreach Lane Placeholder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Operations Lane Placeholder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Operations Lane Placeholder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent Build Lane Placeholder": {
+      "main": [
+        [
+          {
+            "node": "Return Status to Hermes PM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Lane Placeholder": {
+      "main": [
+        [
+          {
+            "node": "Return Status to Hermes PM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Lane Placeholder": {
+      "main": [
+        [
+          {
+            "node": "Return Status to Hermes PM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Outreach Lane Placeholder": {
+      "main": [
+        [
+          {
+            "node": "Return Status to Hermes PM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Operations Lane Placeholder": {
+      "main": [
+        [
+          {
+            "node": "Return Status to Hermes PM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "active": false,
+  "versionId": "starter"
+}

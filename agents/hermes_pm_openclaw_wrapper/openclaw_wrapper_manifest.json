@@ -1,0 +1,50 @@
+{
+  "package_name": "hermes_pm_openclaw_wrapper",
+  "version": "1.0.0",
+  "prepared_for": "jq",
+  "author": "Manus AI",
+  "wrapped_agent": "Hermes PM: JQ Traffic Control Project Manager",
+  "openclaw_agent_id": "jq-pm",
+  "primary_workspace_path": "openclaw_workspace",
+  "primary_skill": "jq-traffic-control",
+  "routing_system": "n8n",
+  "approval_authority": "jq",
+  "guardrail_required": true,
+  "sensitive_action_policy": "Stop and request jq approval before payments, publishing, sending external messages, account creation, credential changes, deletion, production changes, login/MFA/captcha, or platform safety verification steps.",
+  "files": {
+    "readme": "OPENCLAW_WRAPPER_README.md",
+    "architecture": "OPENCLAW_WRAPPER_ARCHITECTURE.md",
+    "research_notes": "OPENCLAW_RESEARCH_NOTES.md",
+    "acceptance_tests": "OPENCLAW_ACCEPTANCE_TESTS.md",
+    "workspace": "openclaw_workspace/",
+    "skill": "openclaw_workspace/skills/jq_traffic_control/SKILL.md",
+    "config_example": "openclaw_config/openclaw.hermes-pm.example.json5",
+    "direct_cli_script": "scripts/run_openclaw_pm_turn.sh",
+    "n8n_cli_script": "scripts/n8n_call_openclaw_pm.sh",
+    "source_hermes_spec": "source_hermes_spec/"
+  },
+  "default_statuses": [
+    "Intake",
+    "Routed",
+    "In Progress",
+    "Blocked",
+    "Needs jq Approval",
+    "Revising",
+    "Approved",
+    "Filed",
+    "Failed",
+    "Closed"
+  ],
+  "default_lanes": [
+    "research",
+    "copywrite",
+    "code",
+    "analyze",
+    "catalog",
+    "outreach",
+    "market_monitor",
+    "operations",
+    "agent_build",
+    "guardrail"
+  ]
+}

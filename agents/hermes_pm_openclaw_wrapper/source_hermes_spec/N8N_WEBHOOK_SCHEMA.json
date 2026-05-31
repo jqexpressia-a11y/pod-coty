@@ -1,0 +1,34 @@
+{
+  "task_id": "JQ-PM-YYYYMMDD-001",
+  "owner": "jq",
+  "requested_outcome": "Describe the exact outcome jq requested.",
+  "lane": "agent_build",
+  "priority": "high",
+  "status": "Intake",
+  "source": "Hermes PM",
+  "assigned_system": "CrewAI",
+  "approval_required": true,
+  "inputs": {
+    "raw_request": "Original jq request goes here.",
+    "links": [],
+    "files": [],
+    "notes": "Route through n8n and apply guardrails."
+  },
+  "acceptance_criteria": [
+    "Task is classified into the correct lane.",
+    "n8n-ready payload is created.",
+    "Guard Rail Agent preflight is passed or escalation is requested.",
+    "Final output waits for jq approval before filing or external action."
+  ],
+  "guardrails": {
+    "no_external_submission_without_approval": true,
+    "no_payments_without_approval": true,
+    "no_credential_storage": true,
+    "no_captcha_bypass": true,
+    "no_destructive_action_without_approval": true
+  },
+  "callback": {
+    "status_destination": "Hermes PM status report",
+    "final_destination": "Pending jq Approval"
+  }
+}

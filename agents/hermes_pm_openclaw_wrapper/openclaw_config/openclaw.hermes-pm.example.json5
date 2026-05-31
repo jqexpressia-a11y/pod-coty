@@ -1,0 +1,32 @@
+// Example OpenClaw config fragment for jq's OpenClaw-wrapped Hermes PM agent.
+// Copy the relevant parts into ~/.openclaw/openclaw.json after running `openclaw onboard`.
+// OpenClaw config is strictly validated, so confirm field support with your installed version before applying.
+{
+  agents: {
+    defaults: {
+      workspace: "~/openclaw-jq-pm/openclaw_workspace",
+      skipBootstrap: false,
+      skills: ["jq-traffic-control"],
+      model: {
+        primary: "anthropic/claude-sonnet-4-6",
+        fallbacks: ["openai/gpt-5.4", "google/gemini-2.5-pro"]
+      }
+    },
+    list: [
+      {
+        id: "jq-pm",
+        workspace: "~/openclaw-jq-pm/openclaw_workspace",
+        skills: ["jq-traffic-control"],
+        groupChat: {
+          mentionPatterns: ["@jqpm", "jq pm", "traffic control"]
+        }
+      }
+    ]
+  },
+  messages: {
+    groupChat: {
+      visibleReplies: "message_tool",
+      unmentionedInbound: "room_event"
+    }
+  }
+}
