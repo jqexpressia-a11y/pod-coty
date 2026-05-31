@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "task_id": "pod-YYYYMMDD-001",
+  "title": "Short implementation title",
+  "status": "queued",
+  "created_by": "manus",
+  "created_at": "2026-05-30T00:00:00Z",
+  "priority": "normal",
+  "branch": "claude/pod-YYYYMMDD-001",
+  "spec_files": [
+    "ARCHITECTURE_SPECS.md",
+    "CLAUDE.md"
+  ],
+  "allowed_paths": [
+    "src/",
+    "README.md"
+  ],
+  "forbidden_paths": [
+    ".git/",
+    ".claude/pod-bridge.local.json"
+  ],
+  "acceptance_criteria": [
+    "The requested behavior is implemented in the allowed paths.",
+    "Relevant checks are run, or the absence of checks is documented in the task result.",
+    "The task pod is archived with result metadata."
+  ],
+  "implementation_notes": "Write concise context here. Claude Code should read this plus the listed spec files before editing.",
+  "result": null
+}

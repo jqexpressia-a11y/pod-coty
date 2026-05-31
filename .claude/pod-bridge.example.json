@@ -1,0 +1,11 @@
+{
+  "enabled": false,
+  "dry_run_default": true,
+  "claude_command": "claude",
+  "task_glob": "pods/inbox/*.json",
+  "default_branch_prefix": "claude/",
+  "max_tasks_per_run": 1,
+  "commit_results": true,
+  "log_file": ".claude/logs/pod-bridge.log",
+  "prompt_template": "Read CLAUDE.md, ARCHITECTURE_SPECS.md, and the active task pod at {task_path}. Implement the task on branch {branch}. Respect allowed_paths and forbidden_paths. Run relevant checks, update the pod result, archive the pod, and commit the implementation."
+}

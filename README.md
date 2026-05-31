@@ -12,6 +12,31 @@ Automated PR review loop: trigger Greptile → fix comments → push → repeat 
 
 See [references/windows-setup.md](.cursor/skills/greploop/references/windows-setup.md) for setup.
 
+## Manus ↔ Claude Code Pod Bridge
+
+This repo now includes a repo-mediated bridge where Manus writes implementation requests as JSON task pods and Claude Code consumes those pods from the local workspace. The communication channel is the repository itself, not a direct agent-to-agent conversation.
+
+| Path | Description |
+|------|-------------|
+| `.claude/` | Claude Code bridge configuration, hook templates, scripts, schemas, and logs. |
+| `CLAUDE.md` | Master rules and spec-driven constraints for Claude Code. |
+| `ARCHITECTURE_SPECS.md` | Architecture and task lifecycle specification for the bridge. |
+| `pods/inbox/` | Manus writes queued `task.json` pods here. |
+| `pods/active/` | The bridge places the currently processing task here. |
+| `pods/archive/` | Completed, skipped, or failed task pods are archived here. |
+
+Install the local hook with PowerShell:
+
+```powershell
+.\.claude\scripts\Install-PodBridgeHook.ps1
+```
+
+Run a safe dry run without invoking Claude Code:
+
+```powershell
+.\.claude\scripts\Invoke-ClaudePod.ps1 -DryRun
+```
+
 ## Files
 
 | File | Description |

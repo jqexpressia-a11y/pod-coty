@@ -1,0 +1,27 @@
+#!/bin/sh
+# Repo-mediated Manus -> Claude Code bridge.
+# This hook is intentionally non-blocking: all failures are logged and ignored.
+
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+script="$repo_root/.claude/scripts/Invoke-ClaudePod.ps1"
+log_dir="$repo_root/.claude/logs"
+log_file="$log_dir/post-commit-hook.log"
+
+mkdir -p "$log_dir" 2>/dev/null || true
+
+if [ ! -f "$script" ]; then
+  echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] bridge script not found: $script" >> "$log_file" 2>/dev/null || true
+  exit 0
+fi
+
+if command -v pwsh >/dev/null 2>&1; then
+  pwsh -NoProfile -ExecutionPolicy Bypass -File "$script" -FromHook >> "$log_file" 2>&1 || true
+elif command -v powershell.exe >/dev/null 2>&1; then
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$script" -FromHook >> "$log_file" 2>&1 || true
+elif command -v powershell >/dev/null 2>&1; then
+  powershell -NoProfile -ExecutionPolicy Bypass -File "$script" -FromHook >> "$log_file" 2>&1 || true
+else
+  echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] PowerShell not found; cannot invoke pod bridge." >> "$log_file" 2>/dev/null || true
+fi
+
+exit 0

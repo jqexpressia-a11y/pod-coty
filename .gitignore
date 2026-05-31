@@ -6,3 +6,7 @@ Dashboard _ Claude Platform_files/
 .DS_Store
 Thumbs.db
 *.tmp
+
+# Local Claude bridge state
+.claude/pod-bridge.local.json
+.claude/logs/*.log
