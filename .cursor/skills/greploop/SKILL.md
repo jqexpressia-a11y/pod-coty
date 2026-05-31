@@ -90,6 +90,29 @@ Also read the **"Prompt to fix all with AI"** section from the latest Greptile g
 
 Optional snapshot: `scripts/Get-GreploopStatus.ps1 -PrNumber $PR_NUMBER`
 
+### B2. Save iteration artifacts (required)
+
+After each review fetch, persist a durable artifact bundle under `.claude/artifacts/greploop/pr-<PR>/`:
+
+```powershell
+.\.cursor\skills\greploop\scripts\Save-GreploopArtifact.ps1 `
+  -PrNumber $PR_NUMBER `
+  -Iteration $N `
+  -Confidence "4/5" `
+  -InlineComments 2 `
+  -Notes "Awaiting fixes on auth.ts"
+```
+
+Artifact layout:
+
+| File | Purpose |
+|------|---------|
+| `manifest.json` | Index of all files in the run |
+| `iteration-N.json` | Structured iteration snapshot |
+| `summary.md` | Human-readable iteration summary |
+
+On loop completion, write a final `greploop-final.json` in the latest run folder with total iterations, final confidence, and remaining comment count.
+
 ### C. Exit conditions
 
 Stop when **either**:
@@ -163,3 +186,4 @@ Remaining issues:
 - Windows setup: [references/windows-setup.md](references/windows-setup.md)
 - Status script: [scripts/Get-GreploopStatus.ps1](scripts/Get-GreploopStatus.ps1)
 - Poll script: [scripts/Wait-GreptileCheck.ps1](scripts/Wait-GreptileCheck.ps1)
+- Artifact script: [scripts/Save-GreploopArtifact.ps1](scripts/Save-GreploopArtifact.ps1)

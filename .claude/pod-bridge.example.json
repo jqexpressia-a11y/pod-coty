@@ -7,5 +7,63 @@
   "max_tasks_per_run": 1,
   "commit_results": true,
   "log_file": ".claude/logs/pod-bridge.log",
-  "prompt_template": "Read CLAUDE.md, ARCHITECTURE_SPECS.md, and the active task pod at {task_path}. Implement the task on branch {branch}. Respect allowed_paths and forbidden_paths. Run relevant checks, update the pod result, archive the pod, and commit the implementation."
+  "artifacts_dir": ".claude/artifacts",
+  "poll_interval_seconds": 2,
+  "prompt_template": "Read CLAUDE.md, ARCHITECTURE_SPECS.md, and the active task pod at {task_path}. Implement the task on branch {branch}. Respect allowed_paths and forbidden_paths. Run relevant checks, update the pod result, archive the pod, commit approved changes when Git handoff is enabled, and return structured JSON with success, changed_files, checks, review, git_handoff, deployment_trigger, infra_requirements, and notes.",
+  "active_dir": "pods/active",
+  "archive_dir": "pods/archive",
+  "failed_dir": "pods/failed",
+  "shared_spec_file": "ARCHITECTURE_SPECS.md",
+  "claude": {
+    "command": "claude",
+    "headless_flag": "-p",
+    "allowed_tools": "Bash,Read,Edit",
+    "max_turns": 10,
+    "output_format": "json",
+    "dangerously_skip_permissions": false,
+    "prompt_template": "Read CLAUDE.md, ARCHITECTURE_SPECS.md, and the active task pod at {task_path}. Implement the task on branch {branch}. Respect allowed_paths and forbidden_paths. Run relevant checks, update and archive the task pod, commit approved changes when Git handoff is enabled, and return structured JSON with success, changed_files, checks, review, git_handoff, deployment_trigger, infra_requirements, and notes."
+  },
+  "quality_gates": {
+    "require_local_checks": true,
+    "greptile": {
+      "enabled": false,
+      "command": "greptile",
+      "failure_blocks_git_handoff": false,
+      "allow_local_bypass": false,
+      "min_confidence": 5
+    },
+    "greploop": {
+      "enabled": false,
+      "max_iterations": 5,
+      "artifacts_subdir": "greploop"
+    }
+  },
+  "git_handoff": {
+    "enabled": false,
+    "remote": "origin",
+    "branch": "",
+    "default_branch_prefix": "claude/",
+    "commit_results": true,
+    "push_after_commit": false,
+    "allow_main_branch_push": false,
+    "exclude_paths": [
+      ".claude/pod-bridge.local.json",
+      ".claude/logs/",
+      ".env",
+      ".env.*",
+      "*.pem",
+      "*.key"
+    ],
+    "commit_message_template": "claude: implement {task_id} {title}"
+  },
+  "deployment_verification": {
+    "required_after_push": true,
+    "target": "kvm",
+    "method": "manual_or_configured_command",
+    "status_command": "",
+    "status_url_template": "",
+    "timeout_seconds": 300,
+    "poll_interval_seconds": 15,
+    "must_report_unverified_as_failure": true
+  }
 }

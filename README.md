@@ -12,6 +12,21 @@ Automated PR review loop: trigger Greptile → fix comments → push → repeat 
 
 See [references/windows-setup.md](.cursor/skills/greploop/references/windows-setup.md) for setup.
 
+Each greploop iteration saves artifacts under `.claude/artifacts/greploop/pr-<number>/`.
+
+## Pod bridge (Python)
+
+Watches `pods/inbox/` and dispatches headless Claude Code with durable artifacts:
+
+```powershell
+cd C:\Users\johnw\OneDrive\Desktop\podcity
+pip install -r .claude/requirements.txt
+python .claude/scripts/bridge.py --dry-run --once
+python .claude/scripts/bridge.py --once
+```
+
+Artifacts are written to `.claude/artifacts/<task_id>/<run_id>/` and linked from the archived task pod `result.artifacts`.
+
 ## Manus ↔ Claude Code Pod Bridge
 
 This repo now includes a repo-mediated bridge where Manus writes implementation requests as JSON task pods and Claude Code consumes those pods from the local workspace. The communication channel is the repository itself, not a direct agent-to-agent conversation.

@@ -10,3 +10,4 @@ Thumbs.db
 # Local Claude bridge state
 .claude/pod-bridge.local.json
 .claude/logs/*.log
+.claude/artifacts/
