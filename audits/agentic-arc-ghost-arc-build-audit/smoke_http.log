@@ -1,0 +1,33 @@
+--- curl / ---
+HTTP/1.1 500 Internal Server Error
+Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate
+ETag: "66fci67lppl"
+Content-Type: text/plain
+Content-Length: 21
+Vary: Accept-Encoding
+Date: Sun, 31 May 2026 19:06:22 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+--- curl /sign-in ---
+HTTP/1.1 500 Internal Server Error
+Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate
+ETag: "66fci67lppl"
+Content-Type: text/plain
+Content-Length: 21
+Vary: Accept-Encoding
+Date: Sun, 31 May 2026 19:06:22 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+--- curl /editor ---
+HTTP/1.1 500 Internal Server Error
+Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate
+ETag: "66fci67lppl"
+Content-Type: text/plain
+Content-Length: 21
+Vary: Accept-Encoding
+Date: Sun, 31 May 2026 19:06:22 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+

@@ -1,0 +1,23 @@
+npm warn deprecated uuid@8.3.2: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+
+> ghost-arc@0.1.0 postinstall
+> npm run prisma:generate
+
+
+> ghost-arc@0.1.0 prisma:generate
+> prisma generate
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma.
+┌─────────────────────────────────────────────────────────┐
+│  Update available 7.7.0 -> 7.8.0                        │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘
+
+✔ Generated Prisma Client (7.7.0) to ./app/generated/prisma in 75ms
+
+
+added 1128 packages in 24s

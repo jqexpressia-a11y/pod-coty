@@ -1,0 +1,90 @@
+{
+  "project": "JavaScript-Mastery-Pro/Agentic-Arc",
+  "local_path": "/home/ubuntu/ghost_arc_build_audit/Agentic-Arc",
+  "summary": {
+    "pass": 12,
+    "fail": 0,
+    "blocked": 1,
+    "overall_status": "PASS_WITH_EXTERNAL_RUNTIME_BLOCKER"
+  },
+  "results": [
+    {
+      "check": "repository cloned",
+      "status": "PASS",
+      "severity": "required",
+      "evidence": "/home/ubuntu/ghost_arc_build_audit/Agentic-Arc"
+    },
+    {
+      "check": "package.json present",
+      "status": "PASS",
+      "severity": "required",
+      "evidence": "name=ghost-arc version=0.1.0"
+    },
+    {
+      "check": "required npm scripts present",
+      "status": "PASS",
+      "severity": "required",
+      "evidence": "{\"build\": \"next build\", \"dev\": \"next dev\", \"lint\": \"eslint\", \"postinstall\": \"npm run prisma:generate\", \"prisma:deploy\": \"prisma migrate deploy\", \"prisma:generate\": \"prisma generate\", \"prisma:migrate\": \"prisma migrate dev\", \"prisma:studio\": \"prisma studio\", \"start\": \"next start\"}"
+    },
+    {
+      "check": "package lock present",
+      "status": "PASS",
+      "severity": "required",
+      "evidence": "/home/ubuntu/ghost_arc_build_audit/Agentic-Arc/package-lock.json"
+    },
+    {
+      "check": "initial npm ci exposed stale lock",
+      "status": "PASS",
+      "severity": "fixed",
+      "evidence": "Initial npm ci failed because package-lock.json was out of sync with package.json."
+    },
+    {
+      "check": "npm ci after lock repair",
+      "status": "PASS",
+      "severity": "required",
+      "evidence": "ig.ts.\n\nPrisma schema loaded from prisma.\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502  Update available 7.7.0 -> 7.8.0                        \u2502\n\u2502  Run the following to update                            \u2502\n\u2502    npm i --save-dev prisma@latest                       \u2502\n\u2502    npm i @prisma/client@latest                          \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n\n\u2714 Generated Prisma Client (7.7.0) to ./app/generated/prisma in 75ms\n\n\nadded 1128 packages in 24s"
+    },
+    {
+      "check": "production build",
+      "status": "PASS",
+      "severity": "required",
+      "evidence": "i/ai/spec\n\u251c \u0192 /api/ai/spec/[roomId]\n\u251c \u0192 /api/ai/spec/token\n\u251c \u0192 /api/liveblocks-auth\n\u251c \u0192 /api/projects\n\u251c \u0192 /api/projects/[projectId]\n\u251c \u0192 /api/projects/[projectId]/canvas\n\u251c \u0192 /api/projects/[projectId]/collaborators\n\u251c \u0192 /api/projects/[projectId]/spec\n\u251c \u0192 /api/projects/[projectId]/specs/[specId]/download\n\u251c \u0192 /editor\n\u251c \u0192 /editor/[roomId]\n\u251c \u0192 /sign-in/[[...sign-in]]\n\u2514 \u0192 /sign-up/[[...sign-up]]\n\n\n\u0192 Proxy (Middleware)\n\n\u25cb  (Static)   prerendered as static content\n\u0192  (Dynamic)  server-rendered on demand"
+    },
+    {
+      "check": "Next.js build artifact exists",
+      "status": "PASS",
+      "severity": "required",
+      "evidence": ".next directory generated"
+    },
+    {
+      "check": "ESLint",
+      "status": "PASS",
+      "severity": "required",
+      "evidence": "> ghost-arc@0.1.0 lint\n> eslint"
+    },
+    {
+      "check": "Prisma client generated",
+      "status": "PASS",
+      "severity": "required",
+      "evidence": "/home/ubuntu/ghost_arc_build_audit/Agentic-Arc/app/generated/prisma"
+    },
+    {
+      "check": "README documents required environment variables",
+      "status": "PASS",
+      "severity": "required",
+      "evidence": "all documented"
+    },
+    {
+      "check": "runtime HTTP smoke test",
+      "status": "BLOCKED",
+      "severity": "external_credentials_required",
+      "evidence": "Server starts, but local HTTP pages return 500 with placeholder Clerk credentials: Publishable key not valid."
+    },
+    {
+      "check": "tracked code/config diff limited",
+      "status": "PASS",
+      "severity": "change_control",
+      "evidence": "package-lock.json"
+    }
+  ]
+}
