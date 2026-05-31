@@ -11,3 +11,5 @@ Thumbs.db
 .claude/pod-bridge.local.json
 .claude/logs/*.log
 .claude/artifacts/
+__pycache__/
+*.pyc
