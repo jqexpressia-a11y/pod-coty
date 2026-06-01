@@ -1,0 +1,218 @@
+name: Deploy to KVM
+
+
+
+on:
+
+  push:
+  
+    branches:
+    
+      - main
+      
+      - production
+      
+  workflow_dispatch:
+  
+    inputs:
+    
+      target_branch:
+      
+        description: Branch to deploy when manually dispatched
+        
+        required: false
+        
+        default: main
+        
+
+
+permissions:
+
+  contents: read
+  
+  deployments: write
+  
+
+
+env:
+
+  DEPLOY_ENVIRONMENT: production
+  
+  DEFAULT_KVM_HOST: "72.62.168.6"
+  
+  DEPLOY_TIMEOUT_SECONDS: "900"
+  
+
+
+concurrency:
+
+  group: kvm-deploy-${{ github.ref }}
+  
+  cancel-in-progress: false
+  
+
+
+jobs:
+
+  deploy:
+  
+    name: Dispatch KVM deployment
+    
+    runs-on: ubuntu-latest
+    
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/production'
+    
+
+
+    steps:
+    
+      - name: Checkout repository metadata
+      
+        uses: actions/checkout@v4
+        
+        with:
+        
+          fetch-depth: 1
+
+on:
+  push:
+    branches:
+      - main
+      - production
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: Branch to deploy when manually dispatched
+        required: false
+        default: main
+
+permissions:
+  contents: read
+  deployments: write
+
+env:
+  DEPLOY_ENVIRONMENT: production
+  DEFAULT_KVM_HOST: "72.62.168.6"
+  DEPLOY_TIMEOUT_SECONDS: "900"
+
+concurrency:
+  group: kvm-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Dispatch KVM deployment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/production'
+
+    steps:
+      - name: Checkout repository metadata
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Create GitHub deployment record
+        id: deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = context.eventName === 'workflow_dispatch'
+              ? (core.getInput('target_branch') || context.ref.replace('refs/heads/', ''))
+              : context.ref.replace('refs/heads/', '');
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: process.env.DEPLOY_ENVIRONMENT,
+              auto_merge: false,
+              required_contexts: [],
+              description: `KVM deployment requested for ${branch}`,
+              payload: {
+                branch,
+                workflow_run_id: context.runId,
+                workflow_run_attempt: context.runAttempt,
+                kvm_host: process.env.DEFAULT_KVM_HOST
+              }
+            });
+            core.setOutput('deployment_id', deployment.data.id.toString());
+            core.setOutput('branch', branch);
+
+      - name: Mark deployment in progress
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number('${{ steps.deployment.outputs.deployment_id }}'),
+              state: 'in_progress',
+              environment: process.env.DEPLOY_ENVIRONMENT,
+              description: 'KVM webhook dispatch started',
+              log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - name: Dispatch signed deployment webhook to KVM
+        id: dispatch
+        env:
+          KVM_WEBHOOK_URL: ${{ secrets.KVM_WEBHOOK_URL }}
+          KVM_WEBHOOK_SECRET: ${{ secrets.KVM_WEBHOOK_SECRET }}
+          KVM_EXPECTED_REPOSITORY: ${{ github.repository }}
+          DEPLOYMENT_ID: ${{ steps.deployment.outputs.deployment_id }}
+          DEPLOY_BRANCH: ${{ steps.deployment.outputs.branch }}
+          DEPLOY_HEALTH_URL: ${{ secrets.KVM_HEALTH_URL }}
+          GITHUB_TOKEN_PRESENT: ${{ github.token != '' }}
+        run: |
+          set -euo pipefail
+          if [ -z "${KVM_WEBHOOK_URL:-}" ]; then
+            echo "KVM_WEBHOOK_URL secret is required." >&2
+            exit 2
+          fi
+          if [ -z "${KVM_WEBHOOK_SECRET:-}" ]; then
+            echo "KVM_WEBHOOK_SECRET secret is required." >&2
+            exit 2
+          fi
+          python3 .github/scripts/dispatch_kvm_deploy.py \
+            --url "${KVM_WEBHOOK_URL}" \
+            --secret "${KVM_WEBHOOK_SECRET}" \
+            --timeout "${DEPLOY_TIMEOUT_SECONDS}" \
+            --repository "${GITHUB_REPOSITORY}" \
+            --expected-repository "${KVM_EXPECTED_REPOSITORY}" \
+            --branch "${DEPLOY_BRANCH}" \
+            --ref "${GITHUB_REF}" \
+            --sha "${GITHUB_SHA}" \
+            --actor "${GITHUB_ACTOR}" \
+            --run-id "${GITHUB_RUN_ID}" \
+            --run-attempt "${GITHUB_RUN_ATTEMPT}" \
+            --deployment-id "${DEPLOYMENT_ID}" \
+            --health-url "${DEPLOY_HEALTH_URL:-}"
+
+      - name: Mark deployment success
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number('${{ steps.deployment.outputs.deployment_id }}'),
+              state: 'success',
+              environment: process.env.DEPLOY_ENVIRONMENT,
+              description: 'KVM deployment completed and health check passed',
+              environment_url: '${{ secrets.KVM_HEALTH_URL }}' || undefined,
+              log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - name: Mark deployment failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number('${{ steps.deployment.outputs.deployment_id }}'),
+              state: 'failure',
+              environment: process.env.DEPLOY_ENVIRONMENT,
+              description: 'KVM deployment failed or could not be verified',
+              log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
