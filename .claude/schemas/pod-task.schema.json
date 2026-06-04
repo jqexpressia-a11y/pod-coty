@@ -45,7 +45,7 @@
     },
     "priority": {
       "type": "string",
-      "enum": ["low", "med", "normal", "high", "urgent"]
+      "enum": ["low", "med", "high"]
     },
     "spec_file": {
       "type": "string",
