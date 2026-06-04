@@ -2,25 +2,27 @@ import { useCallback, useEffect, useState } from 'react'
 import { type Conversation, type ModelId, MODELS } from './types'
 import Sidebar from './components/Sidebar'
 import ChatWindow from './components/ChatWindow'
+import SkillsPanel from './components/SkillsPanel'
+
+type SidebarTab = 'chats' | 'skills'
 
 export default function App() {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeId, setActiveId] = useState<number | null>(null)
   const [selectedModel, setSelectedModel] = useState<ModelId>(MODELS[1].id)
+  const [tab, setTab] = useState<SidebarTab>('chats')
 
   const loadConversations = useCallback(async () => {
-    const convs = await window.api.getConversations()
-    setConversations(convs)
+    setConversations(await window.api.getConversations())
   }, [])
 
-  useEffect(() => {
-    loadConversations()
-  }, [loadConversations])
+  useEffect(() => { loadConversations() }, [loadConversations])
 
   async function handleNew(model: ModelId) {
     const id = await window.api.createConversation(model)
     await loadConversations()
     setActiveId(id)
+    setTab('chats')
   }
 
   async function handleDelete(id: number) {
@@ -34,16 +36,20 @@ export default function App() {
   return (
     <div className="app">
       <Sidebar
+        tab={tab}
+        onTabChange={setTab}
         conversations={conversations}
         activeId={activeId}
-        onSelect={setActiveId}
+        onSelect={(id) => { setActiveId(id); setTab('chats') }}
         onNew={handleNew}
         onDelete={handleDelete}
         selectedModel={selectedModel}
         onModelChange={setSelectedModel}
       />
 
-      {activeConv ? (
+      {tab === 'skills' ? (
+        <SkillsPanel />
+      ) : activeConv ? (
         <ChatWindow
           key={activeConv.id}
           conversation={activeConv}

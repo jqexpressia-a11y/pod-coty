@@ -143,7 +143,14 @@ export default function ChatWindow({ conversation, onTitleChange }: Props) {
         )}
 
         {messages.map((m) => (
-          <MessageBubble key={m.id} message={m} />
+          <MessageBubble
+            key={m.id}
+            message={m}
+            onSaveAsSkill={async (content) => {
+              const title = content.slice(0, 60)
+              await window.api.addSkill({ title, content })
+            }}
+          />
         ))}
 
         {streaming && <StreamingBubble content={streaming} />}
