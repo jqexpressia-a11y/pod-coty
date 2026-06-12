@@ -7,6 +7,10 @@ Dashboard _ Claude Platform_files/
 Thumbs.db
 *.tmp
 
+# Next.js dashboard build output
+dashboard/.next/
+dashboard/node_modules/
+
 # Local Claude bridge state
 .claude/pod-bridge.local.json
 .claude/logs/*.log
