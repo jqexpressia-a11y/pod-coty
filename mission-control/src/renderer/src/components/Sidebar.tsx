@@ -1,11 +1,11 @@
-import { type Conversation, MODELS, type ModelId } from '../types'
+import { useEffect, useState } from 'react'
+import { type Conversation, MODELS, type ModelId, type Provider } from '../types'
 import SpotifyWidget from './SpotifyWidget'
-
-type Tab = 'chats' | 'skills'
+import type { SidebarTab } from '../App'
 
 interface Props {
-  tab: Tab
-  onTabChange: (t: Tab) => void
+  tab: SidebarTab
+  onTabChange: (t: SidebarTab) => void
   conversations: Conversation[]
   activeId: number | null
   onSelect: (id: number) => void
@@ -13,6 +13,43 @@ interface Props {
   onDelete: (id: number) => void
   selectedModel: ModelId
   onModelChange: (m: ModelId) => void
+}
+
+function ProviderBar() {
+  const [provider, setProvider] = useState<Provider>('anthropic')
+  const [fccOk, setFccOk] = useState(false)
+
+  const refresh = async () => {
+    const status = await window.api.getProviderStatus()
+    setProvider(status.provider)
+    setFccOk(status.fccReachable)
+  }
+
+  useEffect(() => {
+    refresh()
+    const t = setInterval(refresh, 30_000)
+    return () => clearInterval(t)
+  }, [])
+
+  const toggle = async () => {
+    const next: Provider = provider === 'anthropic' ? 'fcc' : 'anthropic'
+    await window.api.setProvider(next)
+    refresh()
+  }
+
+  return (
+    <div className="provider-bar">
+      <span className={`provider-label ${provider === 'fcc' ? 'fcc' : ''}`}>
+        {provider === 'fcc' ? '⚡ Free Claude' : '◆ Anthropic'}
+      </span>
+      {provider === 'fcc' && (
+        <span className={`provider-dot ${fccOk ? 'ok' : 'err'}`} title={fccOk ? 'FCC reachable' : 'FCC offline'} />
+      )}
+      <button className="provider-toggle" onClick={toggle}>
+        {provider === 'fcc' ? 'API' : 'FCC'}
+      </button>
+    </div>
+  )
 }
 
 export default function Sidebar({
@@ -33,19 +70,18 @@ export default function Sidebar({
         <p>Pod City AI Dashboard</p>
       </div>
 
+      <ProviderBar />
+
       <div className="sidebar-tabs">
-        <button
-          className={`sidebar-tab ${tab === 'chats' ? 'active' : ''}`}
-          onClick={() => onTabChange('chats')}
-        >
-          Chats
-        </button>
-        <button
-          className={`sidebar-tab ${tab === 'skills' ? 'active' : ''}`}
-          onClick={() => onTabChange('skills')}
-        >
-          Skills
-        </button>
+        {(['chats', 'skills', 'vault', 'journal', 'kanban'] as SidebarTab[]).map((t) => (
+          <button
+            key={t}
+            className={`sidebar-tab ${tab === t ? 'active' : ''}`}
+            onClick={() => onTabChange(t)}
+          >
+            {t === 'chats' ? 'Chat' : t === 'skills' ? 'Skills' : t === 'vault' ? 'Vault' : t === 'journal' ? 'Notes' : 'Board'}
+          </button>
+        ))}
       </div>
 
       {tab === 'chats' && (
@@ -97,10 +133,13 @@ export default function Sidebar({
         </>
       )}
 
-      {tab === 'skills' && (
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', padding: '6px 14px 2px' }}>
-            Open the Skills panel →
+      {tab !== 'chats' && (
+        <div style={{ flex: 1, padding: '8px 14px' }}>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            {tab === 'skills' && 'Manage your skill library →'}
+            {tab === 'vault' && 'Browse Obsidian vault →'}
+            {tab === 'journal' && 'Daily notes →'}
+            {tab === 'kanban' && 'Task board →'}
           </p>
         </div>
       )}

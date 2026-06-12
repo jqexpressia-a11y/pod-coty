@@ -3,8 +3,11 @@ import { type Conversation, type ModelId, MODELS } from './types'
 import Sidebar from './components/Sidebar'
 import ChatWindow from './components/ChatWindow'
 import SkillsPanel from './components/SkillsPanel'
+import VaultPanel from './components/VaultPanel'
+import JournalPanel from './components/JournalPanel'
+import KanbanPanel from './components/KanbanPanel'
 
-type SidebarTab = 'chats' | 'skills'
+export type SidebarTab = 'chats' | 'skills' | 'vault' | 'journal' | 'kanban'
 
 export default function App() {
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -49,6 +52,12 @@ export default function App() {
 
       {tab === 'skills' ? (
         <SkillsPanel />
+      ) : tab === 'vault' ? (
+        <VaultPanel />
+      ) : tab === 'journal' ? (
+        <JournalPanel />
+      ) : tab === 'kanban' ? (
+        <KanbanPanel />
       ) : activeConv ? (
         <ChatWindow
           key={activeConv.id}

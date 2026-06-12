@@ -59,5 +59,25 @@ contextBridge.exposeInMainWorld('api', {
     const h = (_: unknown, d: unknown) => cb(d as { ok: boolean; error?: string })
     ipcRenderer.once('spotify:auth-complete', h)
     return () => ipcRenderer.removeListener('spotify:auth-complete', h)
-  }
+  },
+
+  // ── Provider ───────────────────────────────────────────────────────────────
+  getProvider: () => ipcRenderer.invoke('provider:get'),
+  setProvider: (p: string) => ipcRenderer.invoke('provider:set', p),
+  getProviderStatus: () => ipcRenderer.invoke('provider:status'),
+
+  // ── Kanban ─────────────────────────────────────────────────────────────────
+  kanbanList: () => ipcRenderer.invoke('kanban:list'),
+  kanbanCreate: (title: string, col: string) => ipcRenderer.invoke('kanban:create', title, col),
+  kanbanMove: (id: number, col: string) => ipcRenderer.invoke('kanban:move', id, col),
+  kanbanUpdate: (id: number, title: string, notes: string) => ipcRenderer.invoke('kanban:update', id, title, notes),
+  kanbanDelete: (id: number) => ipcRenderer.invoke('kanban:delete', id),
+
+  // ── Journal ────────────────────────────────────────────────────────────────
+  journalGet: (date: string) => ipcRenderer.invoke('journal:get', date),
+  journalSave: (date: string, content: string) => ipcRenderer.invoke('journal:save', date, content),
+
+  // ── Vault ──────────────────────────────────────────────────────────────────
+  vaultList: () => ipcRenderer.invoke('vault:list'),
+  vaultRead: (filePath: string) => ipcRenderer.invoke('vault:read', filePath)
 })

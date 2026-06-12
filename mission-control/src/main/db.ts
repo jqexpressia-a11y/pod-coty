@@ -73,6 +73,24 @@ export function initDb(): Database.Database {
       key   TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS kanban_tasks (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      title      TEXT    NOT NULL,
+      notes      TEXT    NOT NULL DEFAULT '',
+      col        TEXT    NOT NULL DEFAULT 'inbox' CHECK(col IN ('inbox','active','done')),
+      position   INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      updated_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+
+    CREATE TABLE IF NOT EXISTS journal_entries (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      date       TEXT    NOT NULL UNIQUE,
+      content    TEXT    NOT NULL DEFAULT '',
+      created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      updated_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
   `)
 
   return db
@@ -168,4 +186,59 @@ export function getSetting(db: Database.Database, key: string): string | null {
 
 export function setSetting(db: Database.Database, key: string, value: string): void {
   db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(key, value)
+}
+
+// ── Kanban ────────────────────────────────────────────────────────────────────
+
+export interface KanbanTask {
+  id: number
+  title: string
+  notes: string
+  col: 'inbox' | 'active' | 'done'
+  position: number
+  created_at: number
+  updated_at: number
+}
+
+export function listKanbanTasks(db: Database.Database): KanbanTask[] {
+  return db.prepare('SELECT * FROM kanban_tasks ORDER BY col, position ASC').all() as KanbanTask[]
+}
+
+export function createKanbanTask(db: Database.Database, title: string, col = 'inbox'): number {
+  const { m } = db.prepare('SELECT MAX(position) as m FROM kanban_tasks WHERE col = ?').get(col) as { m: number | null }
+  return db.prepare('INSERT INTO kanban_tasks (title, col, position) VALUES (?, ?, ?)').run(title.slice(0, 200), col, (m ?? -1) + 1).lastInsertRowid as number
+}
+
+export function moveKanbanTask(db: Database.Database, id: number, col: string): void {
+  const { m } = db.prepare('SELECT MAX(position) as m FROM kanban_tasks WHERE col = ?').get(col) as { m: number | null }
+  db.prepare('UPDATE kanban_tasks SET col = ?, position = ?, updated_at = unixepoch() WHERE id = ?').run(col, (m ?? -1) + 1, id)
+}
+
+export function updateKanbanTask(db: Database.Database, id: number, title: string, notes: string): void {
+  db.prepare('UPDATE kanban_tasks SET title = ?, notes = ?, updated_at = unixepoch() WHERE id = ?').run(title.slice(0, 200), notes, id)
+}
+
+export function deleteKanbanTask(db: Database.Database, id: number): void {
+  db.prepare('DELETE FROM kanban_tasks WHERE id = ?').run(id)
+}
+
+// ── Journal ───────────────────────────────────────────────────────────────────
+
+export interface JournalEntry {
+  id: number
+  date: string
+  content: string
+  created_at: number
+  updated_at: number
+}
+
+export function getJournalEntry(db: Database.Database, date: string): JournalEntry | null {
+  return db.prepare('SELECT * FROM journal_entries WHERE date = ?').get(date) as JournalEntry | null
+}
+
+export function saveJournalEntry(db: Database.Database, date: string, content: string): void {
+  db.prepare(`
+    INSERT INTO journal_entries (date, content) VALUES (?, ?)
+    ON CONFLICT(date) DO UPDATE SET content = excluded.content, updated_at = unixepoch()
+  `).run(date, content)
 }

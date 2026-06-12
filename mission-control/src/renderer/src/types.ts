@@ -43,6 +43,38 @@ export interface SpotifyTrack {
   duration_ms: number
 }
 
+export interface KanbanTask {
+  id: number
+  title: string
+  notes: string
+  col: 'inbox' | 'active' | 'done'
+  position: number
+  created_at: number
+  updated_at: number
+}
+
+export interface JournalEntry {
+  id: number
+  date: string
+  content: string
+  created_at: number
+  updated_at: number
+}
+
+export interface VaultFile {
+  name: string
+  path: string
+  size: number
+  modified: number
+}
+
+export type Provider = 'anthropic' | 'fcc'
+
+export interface ProviderStatus {
+  provider: Provider
+  fccReachable: boolean
+}
+
 export const MODELS = [
   { id: 'claude-opus-4-8', label: 'Opus 4' },
   { id: 'claude-sonnet-4-6', label: 'Sonnet 4' },
@@ -85,6 +117,22 @@ declare global {
       spotifyPrev(): Promise<{ ok: boolean }>
       onSpotifyUpdate(cb: (track: SpotifyTrack | null) => void): () => void
       onSpotifyAuthComplete(cb: (r: { ok: boolean; error?: string }) => void): () => void
+      // Provider
+      getProvider(): Promise<Provider>
+      setProvider(p: Provider): Promise<{ ok: boolean }>
+      getProviderStatus(): Promise<ProviderStatus>
+      // Kanban
+      kanbanList(): Promise<KanbanTask[]>
+      kanbanCreate(title: string, col: string): Promise<{ id: number }>
+      kanbanMove(id: number, col: string): Promise<{ ok: boolean }>
+      kanbanUpdate(id: number, title: string, notes: string): Promise<{ ok: boolean }>
+      kanbanDelete(id: number): Promise<{ ok: boolean }>
+      // Journal
+      journalGet(date: string): Promise<JournalEntry | null>
+      journalSave(date: string, content: string): Promise<{ ok: boolean }>
+      // Vault
+      vaultList(): Promise<VaultFile[]>
+      vaultRead(filePath: string): Promise<string>
     }
   }
 }

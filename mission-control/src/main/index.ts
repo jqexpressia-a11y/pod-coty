@@ -1,6 +1,7 @@
-import { app, BrowserWindow, ipcMain, dialog, session, shell } from 'electron'
-import { join } from 'path'
+import { app, BrowserWindow, ipcMain, dialog, session } from 'electron'
+import { join, resolve } from 'path'
 import { writeFileSync } from 'fs'
+import net from 'net'
 import Anthropic from '@anthropic-ai/sdk'
 import {
   initDb,
@@ -16,8 +17,16 @@ import {
   deleteSkill,
   getSetting,
   setSetting,
+  listKanbanTasks,
+  createKanbanTask,
+  moveKanbanTask,
+  updateKanbanTask,
+  deleteKanbanTask,
+  getJournalEntry,
+  saveJournalEntry,
   type Db
 } from './db'
+import { listVaultFiles, readVaultFile } from './vault'
 import { runCurator, shouldRunCurator, getLastCuratorReport } from './curator'
 import {
   startOAuthFlow,
@@ -119,14 +128,35 @@ ipcMain.handle('db:messages', (_e, id: number) => getMessages(db, id))
 ipcMain.handle('db:createConversation', (_e, model: string) => createConversation(db, model))
 ipcMain.handle('db:deleteConversation', (_e, id: number) => { deleteConversation(db, id); return { ok: true } })
 
+// ── Provider-aware Anthropic client ──────────────────────────────────────────
+
+function createAnthropicClient(): Anthropic {
+  const provider = getSetting(db, 'provider') ?? 'anthropic'
+  if (provider === 'fcc') {
+    return new Anthropic({
+      apiKey: 'freecc',
+      baseURL: process.env.FCC_PROXY_URL ?? 'http://127.0.0.1:8082'
+    })
+  }
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set — add it to .env.local and restart.')
+  return new Anthropic({ apiKey })
+}
+
+function checkPort(host: string, port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = net.createConnection(port, host)
+    const timer = setTimeout(() => { socket.destroy(); resolve(false) }, 1500)
+    socket.on('connect', () => { clearTimeout(timer); socket.destroy(); resolve(true) })
+    socket.on('error', () => { clearTimeout(timer); resolve(false) })
+  })
+}
+
 // ── Chat (streaming) ──────────────────────────────────────────────────────────
 
 ipcMain.handle(
   'chat:send',
   async (ipcEvent, payload: { conversationId: number; messages: { role: string; content: string }[]; model: string }) => {
-    const apiKey = process.env.ANTHROPIC_API_KEY
-    if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set — add it to .env.local and restart.')
-
     const { conversationId, messages, model } = payload
     const userMsg = messages[messages.length - 1]
 
@@ -135,7 +165,7 @@ ipcMain.handle(
       updateConversationTitle(db, conversationId, userMsg.content)
     }
 
-    const client = new Anthropic({ apiKey })
+    const client = createAnthropicClient()
     let assistantContent = ''
 
     try {
@@ -244,3 +274,68 @@ ipcMain.handle('spotify:play',  () => withToken(spotifyPlay))
 ipcMain.handle('spotify:pause', () => withToken(spotifyPause))
 ipcMain.handle('spotify:next',  () => withToken(spotifyNext))
 ipcMain.handle('spotify:prev',  () => withToken(spotifyPrev))
+
+// ── Provider ──────────────────────────────────────────────────────────────────
+
+ipcMain.handle('provider:get', () => getSetting(db, 'provider') ?? 'anthropic')
+
+ipcMain.handle('provider:set', (_e, p: string) => {
+  if (p !== 'anthropic' && p !== 'fcc') throw new Error('Invalid provider')
+  setSetting(db, 'provider', p)
+  return { ok: true }
+})
+
+ipcMain.handle('provider:status', async () => {
+  const provider = getSetting(db, 'provider') ?? 'anthropic'
+  let fccReachable = false
+  if (provider === 'fcc') {
+    const url = new URL(process.env.FCC_PROXY_URL ?? 'http://127.0.0.1:8082')
+    fccReachable = await checkPort(url.hostname, Number(url.port) || 8082)
+  }
+  return { provider, fccReachable }
+})
+
+// ── Kanban ────────────────────────────────────────────────────────────────────
+
+ipcMain.handle('kanban:list', () => listKanbanTasks(db))
+ipcMain.handle('kanban:create', (_e, title: string, col: string) => {
+  const id = createKanbanTask(db, title, col)
+  return { id }
+})
+ipcMain.handle('kanban:move', (_e, id: number, col: string) => {
+  moveKanbanTask(db, id, col)
+  return { ok: true }
+})
+ipcMain.handle('kanban:update', (_e, id: number, title: string, notes: string) => {
+  updateKanbanTask(db, id, title, notes)
+  return { ok: true }
+})
+ipcMain.handle('kanban:delete', (_e, id: number) => {
+  deleteKanbanTask(db, id)
+  return { ok: true }
+})
+
+// ── Journal ───────────────────────────────────────────────────────────────────
+
+ipcMain.handle('journal:get', (_e, date: string) => getJournalEntry(db, date))
+ipcMain.handle('journal:save', (_e, date: string, content: string) => {
+  saveJournalEntry(db, date, content)
+  return { ok: true }
+})
+
+// ── Vault ─────────────────────────────────────────────────────────────────────
+
+ipcMain.handle('vault:list', () => {
+  const vaultPath = process.env.OBSIDIAN_VAULT_PATH
+  if (!vaultPath) return []
+  return listVaultFiles(vaultPath)
+})
+
+ipcMain.handle('vault:read', (_e, filePath: string) => {
+  const vaultPath = process.env.OBSIDIAN_VAULT_PATH
+  if (!vaultPath) throw new Error('OBSIDIAN_VAULT_PATH not set')
+  const safe = resolve(filePath)
+  const base = resolve(vaultPath)
+  if (!safe.startsWith(base + '/') && safe !== base) throw new Error('Access denied')
+  return readVaultFile(safe)
+})
