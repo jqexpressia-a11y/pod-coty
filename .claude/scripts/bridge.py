@@ -31,7 +31,7 @@ REQUIRED_TASK_FIELDS = (
     "acceptance_criteria",
     "files",
 )
-PRIORITIES = {"high", "med", "low", "normal", "urgent"}
+PRIORITIES = {"high", "med", "low"}
 
 LOG = logging.getLogger("pod-bridge")
 
