@@ -1,0 +1,158 @@
+name: Build & Deploy Dashboard
+
+on:
+  push:
+    branches: [main, production, claude/ai-mission-control-dashboard-apf7hj]
+    paths:
+      - 'dashboard/**'
+      - '.github/workflows/deploy-dashboard.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+  deployments: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/pod-coty-dashboard
+
+jobs:
+  build-and-push:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+      short_sha: ${{ steps.sha.outputs.short }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Short SHA
+        id: sha
+        run: echo "short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./dashboard
+          file: ./dashboard/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to KVM
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/production' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create GitHub deployment record
+        id: deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: 'dashboard',
+              auto_merge: false,
+              required_contexts: [],
+              description: 'Pod City dashboard deployment',
+              payload: {
+                service: 'dashboard',
+                image_tag: 'sha-${{ needs.build-and-push.outputs.short_sha }}',
+                domain: 'podcitydash-fggmawsh.manus.space',
+              }
+            });
+            core.setOutput('deployment_id', deployment.data.id.toString());
+
+      - name: Mark in-progress
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number('${{ steps.deployment.outputs.deployment_id }}'),
+              state: 'in_progress',
+              environment: 'dashboard',
+              description: 'KVM webhook dispatch started',
+              log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - name: Dispatch signed KVM webhook
+        env:
+          KVM_WEBHOOK_URL: ${{ secrets.KVM_WEBHOOK_URL }}
+          KVM_WEBHOOK_SECRET: ${{ secrets.KVM_WEBHOOK_SECRET }}
+          DEPLOY_HEALTH_URL: https://podcitydash-fggmawsh.manus.space
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/dispatch_kvm_deploy.py \
+            --url            "${KVM_WEBHOOK_URL}" \
+            --secret         "${KVM_WEBHOOK_SECRET}" \
+            --timeout        300 \
+            --repository     "${GITHUB_REPOSITORY}" \
+            --branch         "${GITHUB_REF_NAME}" \
+            --ref            "${GITHUB_REF}" \
+            --sha            "${GITHUB_SHA}" \
+            --actor          "${GITHUB_ACTOR}" \
+            --run-id         "${GITHUB_RUN_ID}" \
+            --run-attempt    "${GITHUB_RUN_ATTEMPT}" \
+            --deployment-id  "${{ steps.deployment.outputs.deployment_id }}" \
+            --health-url     "${DEPLOY_HEALTH_URL}"
+
+      - name: Mark success
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number('${{ steps.deployment.outputs.deployment_id }}'),
+              state: 'success',
+              environment: 'dashboard',
+              environment_url: 'https://podcitydash-fggmawsh.manus.space',
+              description: 'Dashboard deployed and healthy',
+              log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - name: Mark failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number('${{ steps.deployment.outputs.deployment_id }}'),
+              state: 'failure',
+              environment: 'dashboard',
+              description: 'Dashboard deployment failed',
+              log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });

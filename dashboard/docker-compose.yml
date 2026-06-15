@@ -1,0 +1,35 @@
+services:
+  dashboard:
+    image: ghcr.io/jqexpressia-a11y/pod-coty-dashboard:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - HERMES_WEBHOOK_URL=${HERMES_WEBHOOK_URL:-}
+      - PODS_ROOT=/pods
+    volumes:
+      - ${PODS_ROOT:-../pods}:/pods:ro
+    expose:
+      - "3000"
+    networks:
+      - web
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - dashboard
+    networks:
+      - web
+
+networks:
+  web:
+    driver: bridge

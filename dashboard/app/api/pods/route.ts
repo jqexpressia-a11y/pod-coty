@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-const PODS_ROOT = path.resolve(process.cwd(), '..', 'pods');
+const PODS_ROOT = process.env.PODS_ROOT ?? path.resolve(process.cwd(), '..', 'pods');
 
 function readFolder(folder: string) {
   const dir = path.join(PODS_ROOT, folder);
