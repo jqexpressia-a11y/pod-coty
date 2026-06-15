@@ -5,10 +5,11 @@ import { Cpu, Radio, Wifi, Shield } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function MissionHeader() {
-  const [time, setTime] = useState(new Date());
+  const [time, setTime] = useState<Date | null>(null);
   const [pulseIdx, setPulseIdx] = useState(0);
 
   useEffect(() => {
+    setTime(new Date());
     const t = setInterval(() => setTime(new Date()), 1000);
     const p = setInterval(() => setPulseIdx(i => (i + 1) % 4), 800);
     return () => { clearInterval(t); clearInterval(p); };
@@ -63,8 +64,8 @@ export default function MissionHeader() {
       <div className="flex items-center gap-4 text-xs font-mono">
         <span className="text-[#00F5FF]/60">{dots} SYSTEMS NOMINAL</span>
         <div className="text-right">
-          <div className="text-[#00F5FF] font-semibold text-sm">{format(time, 'HH:mm:ss')}</div>
-          <div className="text-[rgba(224,247,250,0.4)] text-[10px]">{format(time, 'yyyy-MM-dd')}</div>
+          <div className="text-[#00F5FF] font-semibold text-sm">{time ? format(time, 'HH:mm:ss') : '--:--:--'}</div>
+          <div className="text-[rgba(224,247,250,0.4)] text-[10px]">{time ? format(time, 'yyyy-MM-dd') : '----/--/--'}</div>
         </div>
       </div>
     </motion.header>
