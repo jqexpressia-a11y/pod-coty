@@ -13,57 +13,76 @@ export async function POST(req: NextRequest) {
       const enqueue = (data: object) =>
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
 
-      // Try streaming via claude CLI
-      let claudeAvailable = true;
-      const proc = spawn('claude', ['-p', prompt, '--output-format', 'stream-json'], {
-        env: { ...process.env },
-      });
+      let closed = false;
+      const close = () => {
+        if (!closed) { closed = true; controller.close(); }
+      };
 
-      let hasOutput = false;
+      // claude -p with stream-json requires --verbose
+      const proc = spawn(
+        'claude',
+        ['-p', prompt, '--output-format', 'stream-json', '--verbose'],
+        {
+          env: { ...process.env },
+          stdio: ['ignore', 'pipe', 'pipe'], // close stdin immediately
+        }
+      );
+
+      let hasContent = false;
 
       proc.stdout.on('data', (chunk: Buffer) => {
-        hasOutput = true;
         const lines = chunk.toString().split('\n').filter(Boolean);
         for (const line of lines) {
           try {
-            const parsed = JSON.parse(line);
-            // stream-json emits {type, delta, ...}
-            if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-              enqueue({ type: 'delta', text: parsed.delta.text });
-            } else if (parsed.type === 'message_stop') {
+            const ev = JSON.parse(line);
+            // Anthropic stream-json event shapes
+            if (ev.type === 'content_block_delta' && ev.delta?.text) {
+              hasContent = true;
+              enqueue({ type: 'delta', text: ev.delta.text });
+            } else if (ev.type === 'message_stop') {
               enqueue({ type: 'done' });
-            } else if (parsed.result) {
-              // flat JSON result fallback
-              enqueue({ type: 'delta', text: parsed.result });
+            } else if (typeof ev.result === 'string') {
+              // plain -p JSON result fallback
+              hasContent = true;
+              enqueue({ type: 'delta', text: ev.result });
               enqueue({ type: 'done' });
             }
           } catch {
-            // Plain text fallback
-            enqueue({ type: 'delta', text: line });
+            // non-JSON line — treat as raw text delta
+            if (line.trim()) {
+              hasContent = true;
+              enqueue({ type: 'delta', text: line });
+            }
           }
         }
       });
 
+      const stderrLines: string[] = [];
       proc.stderr.on('data', (chunk: Buffer) => {
-        const text = chunk.toString();
-        if (text.includes('command not found') || text.includes('ENOENT')) {
-          claudeAvailable = false;
-        }
-        enqueue({ type: 'error', text });
+        stderrLines.push(chunk.toString());
       });
 
-      proc.on('close', () => {
-        if (!hasOutput && !claudeAvailable) {
-          enqueue({ type: 'delta', text: '[Claude CLI not found. Set ANTHROPIC_API_KEY and install claude.]' });
+      proc.on('close', (code) => {
+        if (!hasContent) {
+          const errText = stderrLines.join('').trim();
+          if (errText) {
+            enqueue({ type: 'delta', text: `[Claude CLI error: ${errText}]` });
+          } else {
+            enqueue({ type: 'delta', text: '[No response — set ANTHROPIC_API_KEY in your environment]' });
+          }
         }
         enqueue({ type: 'done' });
-        controller.close();
+        close();
       });
 
-      proc.on('error', () => {
-        enqueue({ type: 'delta', text: '[Claude CLI not available in this environment. Install with: npm i -g @anthropic-ai/claude-code]' });
+      proc.on('error', (err: NodeJS.ErrnoException) => {
+        if (err.code === 'ENOENT') {
+          enqueue({ type: 'delta', text: '[Claude CLI not found — install: npm i -g @anthropic-ai/claude-code]' });
+        } else {
+          enqueue({ type: 'delta', text: `[Spawn error: ${err.message}]` });
+        }
         enqueue({ type: 'done' });
-        controller.close();
+        close();
       });
     },
   });

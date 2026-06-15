@@ -129,7 +129,7 @@ export default function ClaudeTerminal() {
                 </div>
               ) : (
                 <>
-                  <div className="text-[9px] font-mono text-[rgba(224,247,250,0.3)] px-1">
+                  <div className="text-[9px] font-mono text-[rgba(224,247,250,0.3)] px-1" suppressHydrationWarning>
                     {msg.role === 'user' ? 'YOU' : 'CLAUDE'} · {format(msg.timestamp, 'HH:mm:ss')}
                   </div>
                   <div

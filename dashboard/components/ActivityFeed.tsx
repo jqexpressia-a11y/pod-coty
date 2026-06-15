@@ -63,7 +63,7 @@ export default function ActivityFeed({ events: extra }: { events?: ActivityEvent
                 <div className="text-[11px] font-mono text-[rgba(224,247,250,0.75)] whitespace-nowrap">
                   {ev.message}
                 </div>
-                <div className="text-[9px] text-[rgba(224,247,250,0.3)] font-mono">
+                <div className="text-[9px] text-[rgba(224,247,250,0.3)] font-mono" suppressHydrationWarning>
                   {format(ev.timestamp, 'HH:mm:ss')}
                 </div>
               </div>
